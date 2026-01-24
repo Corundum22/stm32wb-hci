@@ -824,8 +824,8 @@ impl VendorEvent {
                 to_gatt_multi_notification(buffer)?,
             )),
             0x0C1B => Ok(VendorEvent::GattNotificationComplete({
-                require_len!(buffer, 2);
-                AttributeHandle(LittleEndian::read_u16(buffer))
+                require_len!(buffer[2..], 2);
+                AttributeHandle(LittleEndian::read_u16(&buffer[2..]))
             })),
             0x0C1D => Ok(VendorEvent::GattReadExt(to_gatt_read_ext(buffer)?)),
             0x0C1E => Ok(VendorEvent::GattIndicationExt(to_attribute_value_ext(
@@ -981,13 +981,12 @@ fn extract_l2cap_connection_update_response_result(
 fn to_l2cap_connection_update_response(
     buffer: &[u8],
 ) -> Result<L2CapConnectionUpdateResponse, crate::event::Error> {
-    require_len!(buffer, 11);
-    require_l2cap_event_data_len!(buffer, 6);
-    require_l2cap_len!(LittleEndian::read_u16(&buffer[7..]), 2);
+    require_len!(buffer, 6);
+    require_l2cap_event_data_len!(buffer, 0);
 
     Ok(L2CapConnectionUpdateResponse {
         conn_handle: ConnectionHandle(LittleEndian::read_u16(&buffer[2..])),
-        result: extract_l2cap_connection_update_response_result(buffer)
+        result: to_l2cap_connection_update_accepted_result(LittleEndian::read_u16(&buffer[4..]))
             .map_err(crate::event::Error::Vendor)?,
     })
 }
